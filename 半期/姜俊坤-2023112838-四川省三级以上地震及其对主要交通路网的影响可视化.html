@@ -88,9 +88,8 @@
             animation: breathYellow 2s infinite alternate;
         }
 
-        .breath-blue {
-            background-color: rgba(66,133,244,0.8);
-            animation: breathBlue 2.5s infinite alternate;
+        .solid-blue {
+            background-color: rgba(66,133,244,0.9);
         }
 
         @keyframes breathRed {
@@ -102,18 +101,13 @@
             0% { transform: scale(0.8); opacity: 0.7; }
             100% { transform: scale(1.2); opacity: 1; }
         }
-
-        @keyframes breathBlue {
-            0% { transform: scale(0.8); opacity: 0.7; }
-            100% { transform: scale(1.2); opacity: 1; }
-        }
     </style>
 </head>
 
 <body>
     <div class="demo-title">
         <h1>四川省三级以上地震分布可视化</h1>
-        <h3>震级分级显示：≥6级(红) 5级(黄) 4级(蓝)</h3>
+        <h3>震级分级显示:≥6级(红) 5级(黄) 4级(蓝)</h3>
     </div>
 
     <div class="legend">
@@ -127,7 +121,7 @@
             <span>5级地震</span>
         </div>
         <div class="legend-item">
-            <div class="legend-color breath-blue">4</div>
+            <div class="legend-color solid-blue">4</div>
             <span>4级地震</span>
         </div>
     </div>
@@ -138,33 +132,33 @@
     <script src="data/四川省三级以上地震目录202507180100.json"></script>
     <script>
         
+      // 初始化高德地图（AMap）
       var map = window.map = new AMap.Map('map', {
-          zoom: 6.7,
-          center: [104.0633717, 30.6598628],
-          pitch: 10,
-          showLabel: true,
-          viewMode: '3D',
+          zoom: 6.7,                            // - zoom: 初始缩放级别
+          center: [104.0633717, 30.6598628],    // - center: 地图中心经纬
+          pitch: 15,                            // - pitch: 视角倾斜角度
+          showLabel: true,                      // - showLabel: 是否显示底图自带的 行政区标签
+          viewMode: '3D',                       // - viewMode: '3D' 启用三维模式。
+          mapStyle: 'amap://styles/dark',       // - mapStyle: 指定地图样式
       });
 
-      var loca = window.loca = new Loca.Container({
-          map,
-      });
+      // Loca 容器：将 Loca 可视化组件绑定到 AMap 地图上
+      var loca = window.loca = new Loca.Container({ map });
 
-      // 数据转换：仅保留经度(lng)、纬度(lat)、震级(magnitude)和深度(depth)
+      
       let originData = earthquake || [];
-      console.log('原始数据示例', originData && originData[0]);
-      
-      // 创建三个不同震级的数据集
-      let geoDataRed = { type: "FeatureCollection", features: [] };   // ≥6级
-      let geoDataYellow = { type: "FeatureCollection", features: [] }; // 5级
-      let geoDataBlue = { type: "FeatureCollection", features: [] };   // 4级
-      
+      // 按不同震级准备三个 GeoJSON 容器（减少后续渲染计算）
+      let geoDataRed = { type: "FeatureCollection", features: [] };
+      let geoDataYellow = { type: "FeatureCollection", features: [] };
+      let geoDataBlue = { type: "FeatureCollection", features: [] };
+
       originData.forEach(item => {
-          const lng = Number(item.jingdu || item.lng );
-          const lat = Number(item.weidu || item.lat);
-          const magnitude = Number(item.zhenji || item.magnitude || 0);
-          const depth = Number(item.shendu || item.depth || 0);
-          
+          const lng = Number(item.jingdu);
+          const lat = Number(item.weidu);
+          const magnitude = Number(item.zhenji);
+          const depth = Number(item.shendu);
+
+          // 仅在坐标有效时才加入要素，避免渲染错误
           if (!isNaN(lng) && !isNaN(lat)) {
               const feature = {
                   type: "Feature",
@@ -177,8 +171,8 @@
                       coordinates: [lng, lat]
                   }
               };
-              
-              // 根据震级分类
+
+              // 根据震级归类（阈值可根据需求调整）
               if (magnitude >= 6) {
                   geoDataRed.features.push(feature);
               } else if (magnitude >= 5) {
@@ -188,80 +182,316 @@
               }
           }
       });
-      
-      console.log('6级以上地震数量:', geoDataRed.features.length);
-      console.log('5级地震数量:', geoDataYellow.features.length);
-      console.log('4级地震数量:', geoDataBlue.features.length);
+
 
       // 创建三个数据源
       var geoRed = new Loca.GeoJSONSource({ data: geoDataRed });
       var geoYellow = new Loca.GeoJSONSource({ data: geoDataYellow });
       var geoBlue = new Loca.GeoJSONSource({ data: geoDataBlue });
 
-      // 6级及以上地震 - 红色呼吸点
-      var breathRed = new Loca.ScatterLayer({
-          zIndex: 113,
-          opacity: 1,
+    // 四川省主要城市中心坐标（用于将地震点与最近城市连线，生成弧线效果）
+    var cityCenters = {
+          "成都市": [104.066, 30.658],
+          "绵阳市": [104.679, 31.467],
+          "德阳市": [104.398, 31.127],
+          "自贡市": [104.778, 29.339],
+          "攀枝花市": [101.718, 26.582],
+          "泸州市": [105.443, 28.871],
+          "广元市": [105.843, 32.435],
+          "遂宁市": [105.592, 30.532],
+          "内江市": [105.058, 29.580],
+          "乐山市": [103.765, 29.552],
+          "南充市": [106.110, 30.837],
+          "眉山市": [103.848, 30.075],
+          "宜宾市": [104.642, 28.751],
+          "广安市": [106.633, 30.456],
+          "达州市": [107.468, 31.209],
+          "雅安市": [103.042, 30.010],
+          "巴中市": [106.747, 31.867],
+          "资阳市": [104.627, 30.128],
+          "阿坝藏族羌族自治州": [102.224, 31.899],
+          "甘孜藏族自治州": [101.962, 30.049],
+          "凉山彝族自治州": [102.267, 27.881]
+      };
+
+    
+        //计算两点之间的距离（简化版）
+      function calculateDistance(coord1, coord2) {
+          const lng1 = coord1[0], lat1 = coord1[1];
+          const lng2 = coord2[0], lat2 = coord2[1];
+          const dLng = lng2 - lng1;
+          const dLat = lat2 - lat1;
+          return Math.sqrt(dLng * dLng + dLat * dLat) * 111; // 大致公里数
+      }
+
+      // 找到最近的城市中心
+      function findNearestCity(earthquakeCoord) {
+          let nearestCity = null;
+          let minDistance = Infinity;
+
+          for (const [cityName, cityCoord] of Object.entries(cityCenters)) {
+              const distance = calculateDistance(earthquakeCoord, cityCoord);
+              if (distance < minDistance) {
+                  minDistance = distance;
+                  nearestCity = { name: cityName, coord: cityCoord, distance: distance };
+              }
+          }
+          return nearestCity;
+      }
+
+      
+      // 根据地震点生成与最近城市连线的弧线数据：
+      function createArcLineData(earthquakeData, colorType) {
+          const arcFeatures = [];
+
+          earthquakeData.features.forEach(earthquake => {
+              const earthquakeCoord = earthquake.geometry.coordinates;
+              const nearestCity = findNearestCity(earthquakeCoord);
+
+              // 仅当找到最近城市并能计算距离时生成弧线
+              if (nearestCity && nearestCity.distance) {
+                  const feature = {
+                      type: "Feature",
+                      properties: {
+                          magnitude: earthquake.properties.magnitude,
+                          depth: earthquake.properties.depth,
+                          city: nearestCity.name,
+                          distance: nearestCity.distance,
+                          colorType: colorType
+                      },
+                      geometry: {
+                          type: "LineString",
+                          coordinates: [earthquakeCoord, nearestCity.coord]
+                      }
+                  };
+                  arcFeatures.push(feature);
+              }
+          });
+
+          console.log(`${colorType}色弧线有效数据:`, arcFeatures.length);
+          return {
+              type: "FeatureCollection",
+              features: arcFeatures
+          };
+      }
+
+      // 创建不同震级的弧线数据
+      var arcDataRed = createArcLineData(geoDataRed, 'red');
+      var arcDataYellow = createArcLineData(geoDataYellow, 'yellow');
+      var arcDataBlue = createArcLineData(geoDataBlue, 'blue');
+
+      console.log('红色弧线数量:', arcDataRed.features.length);
+      console.log('黄色弧线数量:', arcDataYellow.features.length);
+      console.log('蓝色弧线数量:', arcDataBlue.features.length);
+
+      // 创建弧线数据源
+      var arcGeoRed = new Loca.GeoJSONSource({ data: arcDataRed });
+      var arcGeoYellow = new Loca.GeoJSONSource({ data: arcDataYellow });
+      var arcGeoBlue = new Loca.GeoJSONSource({ data: arcDataBlue });
+
+      // 添加安全检查
+      function getSafeDistance(feat) {
+          return feat && feat.properties ? (feat.properties.distance || 100) : 100;
+      }
+
+
+      // 6级及以上地震 - 红色弧线
+      var pulseLinkRed = new Loca.PulseLinkLayer({
+          zIndex: 110,          // - zIndex: 图层层级
+          opacity: 0.8,         // - opacity: 透明度
+          visible: true,        // - visible: 是否可见
+          zooms: [2, 22],       // - zooms: 图层显示的缩放级别范围
+          depth: true,          // - depth: 是否启用深度效果
+      });
+      pulseLinkRed.setSource(arcGeoRed);
+      pulseLinkRed.setStyle({
+          unit: 'meter',
+          dash: [3000, 0, 3000, 0],         // - dash: 控制线段的虚线样式
+          lineWidth: function () {          // - lineWidth: 以数组形式表示线的两端宽度或可变宽度
+              return [500, 2000];
+          },
+          height: function (index, feat) {  // - height: 弧线高度
+              const distance = getSafeDistance(feat);
+              return distance * 1000 + 5000;
+          },
+          smoothSteps: 20,
+          speed: function (index, prop) {
+              return 5000 + Math.random() * 10000;
+          },
+          flowLength: 8000,
+          lineColors: function (index, feat) {  // - lineColors/headColor/trailColor: 控制线体渐变与流动头尾颜色
+              return ['rgba(255,100,100,1)', 'rgba(255,50,50,1)', 'rgba(215,48,39,1)'];
+          },
+          maxHeightScale: 0.4,
+          headColor: 'rgba(255, 100, 100, 1)',
+          trailColor: 'rgba(255, 100, 100, 0)',
+      });
+
+      // 5级地震 - 黄色弧线
+      var pulseLinkYellow = new Loca.PulseLinkLayer({
+          zIndex: 109,
+          opacity: 0.7,
           visible: true,
           zooms: [2, 22],
+          depth: true,
+      });
+      pulseLinkYellow.setSource(arcGeoYellow);
+      pulseLinkYellow.setStyle({
+          unit: 'meter',
+          dash: [2500, 0, 2500, 0],
+          lineWidth: function () {
+              return [400, 1500];
+          },
+          height: function (index, feat) {
+              const distance = getSafeDistance(feat);
+              return distance * 800 + 4000;
+          },
+          smoothSteps: 20,
+          speed: function (index, prop) {
+              return 6000 + Math.random() * 12000;
+          },
+          flowLength: 6000,
+          lineColors: function (index, feat) {
+              return ['rgba(255,200,100,1)', 'rgba(255,180,80,1)', 'rgba(253,174,97,1)'];
+          },
+          maxHeightScale: 0.35,
+          headColor: 'rgba(255, 200, 100, 1)',
+          trailColor: 'rgba(255, 200, 100, 0)',
+      });
+
+      // 4级地震 - 蓝色弧线
+      var pulseLinkBlue = new Loca.PulseLinkLayer({
+          zIndex: 108,
+          opacity: 0.6,
+          visible: true,
+          zooms: [2, 22],
+          depth: true,
+      });
+      pulseLinkBlue.setSource(arcGeoBlue);
+      pulseLinkBlue.setStyle({
+          unit: 'meter',
+          dash: [2000, 0, 2000, 0],
+          lineWidth: function () {
+              return [300, 1200];
+          },
+          height: function (index, feat) {
+              const distance = getSafeDistance(feat);
+              return distance * 600 + 3000;
+          },
+          smoothSteps: 20,
+          speed: function (index, prop) {
+              return 7000 + Math.random() * 14000;
+          },
+          flowLength: 10000,
+          lineColors: function (index, feat) {
+              return ['rgba(100,150,255,1)', 'rgba(80,130,255,1)', 'rgba(66,133,244,1)'];
+          },
+          maxHeightScale: 0.3,
+          headColor: 'rgba(100, 150, 255, 1)',
+          trailColor: 'rgba(100, 150, 255, 0)',
+      });
+
+
+      // 6级及以上地震 - 红色呼吸点
+      var breathRed = new Loca.ScatterLayer({
+          zIndex: 113,      // - zIndex: 图层层级
+          opacity: 0.6,       // - opacity: 透明度
+          visible: true,    // - visible: 是否可见
+          zooms: [2, 22],   // - zooms: 图层显示的缩放级别范围
       });
       breathRed.setSource(geoRed);
       breathRed.setStyle({
           unit: 'meter',
-          size: [65000 , 65000], // 最大尺寸
+          size: [150000, 150000], // size: 以米为单位的表现尺寸，视 zoom 与地图投影而变化
           borderWidth: 0,
-          texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/breath_red.png',
-          duration: 800,
-          animate: true,
+          texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/breath_red.png',// texture: 使用的图片资源
+          duration: 1800,        // duration: 呼吸动画周期
+          animate: true,        // animate: 是否启用动画
       });
 
       // 5级地震 - 黄色呼吸点
       var breathYellow = new Loca.ScatterLayer({
           zIndex: 112,
-          opacity: 1,
+          opacity: 0.6,
           visible: true,
           zooms: [2, 22],
       });
       breathYellow.setSource(geoYellow);
       breathYellow.setStyle({
           unit: 'meter',
-          size: [40000, 40000], // 中等尺寸
+          size: [90000, 90000],
           borderWidth: 0,
           texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/breath_yellow.png',
           duration: 1200,
           animate: true,
       });
 
-      // 4级地震 - 蓝色呼吸点
-      var breathBlue = new Loca.ScatterLayer({
+      // 4级地震 - 蓝色纯色贴地点
+      var scatterBlue = new Loca.ScatterLayer({
           zIndex: 111,
-          opacity: 1,
+          opacity: 0.6,
           visible: true,
           zooms: [2, 22],
       });
-      breathBlue.setSource(geoBlue);
-      breathBlue.setStyle({
+      scatterBlue.setSource(geoBlue);
+      scatterBlue.setStyle({
+          color: 'rgba(66,133,244,0.9)',
           unit: 'meter',
-          size: [20000, 20000], // 较小尺寸
+          size: [15000, 15000],
           borderWidth: 0,
-          texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/breath_blue.png',
-          duration: 1500,
-          animate: true,
       });
 
-      // 添加到地图
-      loca.add(breathBlue);
-      loca.add(breathYellow);
-      loca.add(breathRed);
+    // 将图层按从下（弧线）到上（点）的顺序添加到 Loca 容器中，保证点位覆盖在弧线之上。
+    loca.add(pulseLinkBlue);
+    loca.add(pulseLinkYellow);
+    loca.add(pulseLinkRed);
+    loca.add(scatterBlue);
+    loca.add(breathYellow);
+    loca.add(breathRed);
 
-      // 启动渲染动画
-      loca.animate.start();
+    // 启动 Loca 的渲染/动画循环（必要步骤，否则 animate: true 的图层不会动）
+    loca.animate.start();
 
-      // 可选：添加图层控制
-      var dat = new Loca.Dat();
-      dat.addLayer(breathRed, '6级以上地震');
-      dat.addLayer(breathYellow, '5级地震');
-      dat.addLayer(breathBlue, '4级地震');
+      // ----- 点击交互：在点击弧线时显示信息弹窗 -----
+      // 使用 AMap.Marker 作为信息气泡的承载体：先创建但默认隐藏，只有在点击到要素时显示并设置内容与位置。
+      var clickInfo = new AMap.Marker({ anchor: 'bottom-center', visible: false });
+      clickInfo.setMap(map);
+
+      // 点击地图时尝试查询各个 PulseLinkLayer 中是否命中要素（按优先级查询）
+      // 说明：PulseLinkLayer 提供 queryFeature(pixel) 方法用于拾取，要传入屏幕像素位置。
+      map.on("click", function (e) {
+          // 依次检查红/黄/蓝弧线是否被点击到，返回第一个匹配要素
+          let feat = pulseLinkRed.queryFeature(e.pixel.toArray()) ||
+                     pulseLinkYellow.queryFeature(e.pixel.toArray()) ||
+                     pulseLinkBlue.queryFeature(e.pixel.toArray());
+
+          if (feat) {
+              // 显示并填充信息气泡：将气泡放在弧线的城市端（coordinates[1]）以靠近城市显示
+              clickInfo.show();
+              const props = feat.properties;
+              clickInfo.setPosition(feat.geometry.coordinates[1]); // 显示在城市中心
+              clickInfo.setContent(
+                  '<div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.8); color:#fff; font-size: 12px; border-radius: 4px;">' +
+                  '城市: ' + props.city + '<br>' +
+                  '震级: ' + props.magnitude + '级<br>' +
+                  '深度: ' + props.depth + 'km' +
+                  '</div>'
+              );
+          } else {
+              // 未命中要素时隐藏气泡
+              clickInfo.hide();
+          }
+      });
+
+    // 可选：添加图层控制（便于在页面上开关某些图层进行对比）
+    // Loca.Dat 会在页面右上角生成简单的图层开关 UI，便于调试和展示
+    var dat = new Loca.Dat();
+    dat.addLayer(breathRed, '6级以上地震');
+    dat.addLayer(breathYellow, '5级地震');
+    dat.addLayer(scatterBlue, '4级地震');
+    dat.addLayer(pulseLinkRed, '6级以上弧线');
+    dat.addLayer(pulseLinkYellow, '5级弧线');
+    dat.addLayer(pulseLinkBlue, '4级弧线');
 
     </script>
 </body>
