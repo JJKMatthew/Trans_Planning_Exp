@@ -215,7 +215,7 @@
       };
 
     
-        //计算两点之间的距离（简化版）
+        //计算两点之间的距离
       function calculateDistance(coord1, coord2) {
           const lng1 = coord1[0], lat1 = coord1[1];
           const lng2 = coord2[0], lat2 = coord2[1];
@@ -441,7 +441,7 @@
           borderWidth: 0,
       });
 
-    // 将图层按从下（弧线）到上（点）的顺序添加到 Loca 容器中，保证点位覆盖在弧线之上。
+    // 将图层按从下到上的顺序添加到 Loca 容器中
     loca.add(pulseLinkBlue);
     loca.add(pulseLinkYellow);
     loca.add(pulseLinkRed);
@@ -449,42 +449,9 @@
     loca.add(breathYellow);
     loca.add(breathRed);
 
-    // 启动 Loca 的渲染/动画循环（必要步骤，否则 animate: true 的图层不会动）
+    // 启动 Loca 的渲染
     loca.animate.start();
 
-      // ----- 点击交互：在点击弧线时显示信息弹窗 -----
-      // 使用 AMap.Marker 作为信息气泡的承载体：先创建但默认隐藏，只有在点击到要素时显示并设置内容与位置。
-      var clickInfo = new AMap.Marker({ anchor: 'bottom-center', visible: false });
-      clickInfo.setMap(map);
-
-      // 点击地图时尝试查询各个 PulseLinkLayer 中是否命中要素（按优先级查询）
-      // 说明：PulseLinkLayer 提供 queryFeature(pixel) 方法用于拾取，要传入屏幕像素位置。
-      map.on("click", function (e) {
-          // 依次检查红/黄/蓝弧线是否被点击到，返回第一个匹配要素
-          let feat = pulseLinkRed.queryFeature(e.pixel.toArray()) ||
-                     pulseLinkYellow.queryFeature(e.pixel.toArray()) ||
-                     pulseLinkBlue.queryFeature(e.pixel.toArray());
-
-          if (feat) {
-              // 显示并填充信息气泡：将气泡放在弧线的城市端（coordinates[1]）以靠近城市显示
-              clickInfo.show();
-              const props = feat.properties;
-              clickInfo.setPosition(feat.geometry.coordinates[1]); // 显示在城市中心
-              clickInfo.setContent(
-                  '<div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.8); color:#fff; font-size: 12px; border-radius: 4px;">' +
-                  '城市: ' + props.city + '<br>' +
-                  '震级: ' + props.magnitude + '级<br>' +
-                  '深度: ' + props.depth + 'km' +
-                  '</div>'
-              );
-          } else {
-              // 未命中要素时隐藏气泡
-              clickInfo.hide();
-          }
-      });
-
-    // 可选：添加图层控制（便于在页面上开关某些图层进行对比）
-    // Loca.Dat 会在页面右上角生成简单的图层开关 UI，便于调试和展示
     var dat = new Loca.Dat();
     dat.addLayer(breathRed, '6级以上地震');
     dat.addLayer(breathYellow, '5级地震');
