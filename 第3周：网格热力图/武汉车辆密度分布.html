@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武汉车辆密度分布</title>
+    <style>
+        html,
+        body,
+        #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 标题容器 */
+        .demo-title {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            z-index: 1;
+        }
+
+        /* 主标题 */
+        h1 {
+            font-size: 18px;
+            margin: 0;
+            color: rgb(180, 180, 190);
+        }
+
+        /* 副标题 */
+        h3 {
+            font-size: 12px;
+            font-weight: normal;
+            margin-top: 5px;
+            color: rgb(150,150,150);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 调用标题容器和标题格式 -->
+    <div class="demo-title">
+        <h1>网格图--武汉市车辆密度热力</h1>
+        <h3>通过热力映射车辆分布情况，颜色和高度体现出车辆密度</h3>
+    </div>
+
+    <!-- 地图容器 -->
+    <div id="map"></div>
+    <!-- 引入高德地图和Loca.js -->
+    <script src="https://webapi.amap.com/maps?v=2.0&key=0aafc83cbd2990a6566e3c1f99020ce5"></script>
+    <script src="https://webapi.amap.com/loca?v=2.0.0&key=0aafc83cbd2990a6566e3c1f99020ce5"></script>
+
+    <script>
+      var map = new AMap.Map('map', {
+         zoom: 11.57,                    // 缩放级别
+         center: [114.341232,30.567523], // 武汉市中心坐标
+         // showLabel: false,
+         pitch: 45,                      // 3D俯仰角度（倾斜45度）
+         rotation: -163,                 // 地图旋转角度
+         viewMode: '3D',                 // 3D模式
+         showLabel: false,               // 隐藏标签
+         mapStyle: 'amap://styles/dark', // 深色地图样式
+      });
+
+      // 创建Loca可视化容器
+      var loca = new Loca.Container({
+          map,
+      });
+        // 创建并设置三种光照
+      loca.ambLight = {
+          intensity: 2.0,
+          color: '#fff',
+      };
+      loca.dirLight = {
+          intensity: 1.2,
+          color: '#fff',
+          target: [0, 1, 0],
+          position: [0, -1, 1],
+      };
+      loca.pointLight = {
+          color: 'rgb(100,100,100)',
+          position: [114.2517, 30.552128, 20000],
+          intensity: 1.6,
+          // 距离表示从光源到光照强度为 0 的位置，0 就是光不会消失。
+          distance: 100000,
+      };
+
+
+      // 创建数据源
+      var geo = new Loca.GeoJSONSource({
+          url: 'https://a.amap.com/Loca/static/loca-v2/demos/mock_data/wh_car.json',
+      });
+
+      // 创建网格图层
+      var ll = new Loca.GridLayer({
+          // loca,
+          zIndex: 10,
+          opacity: 1,
+          visible: true,
+          zooms: [2, 22],
+          acceptLight: true,
+          // shinniness: 0,
+          // cullface: 'none',
+          // depth: true,
+          // hasSide: true,
+      });
+
+      // 分级设置柱状图颜色和高度
+      var colors = ['#FAE200', '#D27E37', '#C53634', '#C12B6E', '#A92E9A', '#67238A', '#211A50', '#18244E'].reverse();
+      var heights = [100, 200, 400, 600, 800, 1400, 1800, 4000];
+      ll.setSource(geo);
+      ll.setStyle({
+          unit: 'meter',
+          radius:66,
+          gap: 0,
+          altitude: 100,
+          height: function (index, feature) {
+              var ranks = feature.coordinates && feature.coordinates.length || 0;
+              return ranks < 5 ?
+                  heights[0] : ranks < 10 ?
+                      heights[1] : ranks < 20 ?
+                          heights[2] : ranks < 30 ?
+                              heights[3] : ranks < 50 ?
+                                  heights[4] : ranks < 80 ?
+                                      heights[5] : ranks < 100 ?
+                                          heights[6] : heights[7];
+          },
+          topColor: function (index, feature) {
+              var ranks = feature.coordinates && feature.coordinates.length || 0;
+              return ranks < 5 ?
+                  colors[0] : ranks < 10 ?
+                      colors[1] : ranks < 20 ?
+                          colors[2] : ranks < 30 ?
+                              colors[3] : ranks < 50 ?
+                                  colors[4] : ranks < 80 ?
+                                      colors[5] : ranks < 100 ?
+                                          colors[6] : colors[7];
+          },
+          sideTopColor: function (index, feature) {
+              var ranks = feature.coordinates && feature.coordinates.length || 0;
+              return ranks < 5 ?
+                  colors[0] : ranks < 10 ?
+                      colors[1] : ranks < 20 ?
+                          colors[2] : ranks < 30 ?
+                              colors[3] : ranks < 50 ?
+                                  colors[4] : ranks < 80 ?
+                                      colors[5] : ranks < 100 ?
+                                          colors[6] : colors[7];
+          },
+          sideBottomColor: function (index, feature) {
+              var ranks = feature.coordinates && feature.coordinates.length || 0;
+              return ranks < 5 ?
+                  colors[0] : ranks < 10 ?
+                      colors[1] : ranks < 20 ?
+                          colors[2] : ranks < 30 ?
+                              colors[3] : ranks < 50 ?
+                                  colors[4] : ranks < 80 ?
+                                      colors[5] : ranks < 100 ?
+                                          colors[6] : colors[7];
+          }
+      });
+      loca.add(ll);
+
+      // 图例
+      var lengend = new Loca.Legend({
+          loca: loca,
+          title: {
+              label: '车辆密度(辆)',
+              fontColor: 'rgba(255,255,255,0.4)',
+              fontSize: '16px',
+          },
+          style: {
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              left: '20px',
+              bottom: '40px',
+              fontSize: '12px',
+          },
+          dataMap: [
+              { label: 100, color: colors[7] },
+              { label: 80, color: colors[6] },
+              { label: 50, color: colors[5] },
+              { label: 40, color: colors[4] },
+              { label: 30, color: colors[3] },
+              { label: 20, color: colors[2] },
+              { label: 10, color: colors[1] },
+              { label: 5, color: colors[0] },
+          ],
+      });
+
+      // 控制条
+      var dat = new Loca.Dat();
+      dat.addLight(loca.ambLight, loca, '环境光');
+      dat.addLight(loca.dirLight, loca, '平行光');
+      dat.addLight(loca.pointLight, loca, '点光');
+      dat.addLayer(ll, '车辆图层');
+
+    </script>
+</body>
+
+</html>

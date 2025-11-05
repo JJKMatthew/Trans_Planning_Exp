@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>热力图</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <style>
+        html,
+        body,
+        #container {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=fd493a512dc607958fd8e6077da6a59b"></script>
+    <script src="bike_od.js"></script>
+    <script>
+        var map = new AMap.Map("container", {
+            resizeEnable: true,
+            center: [104.065762, 30.657479],
+            zoom: 11,
+            mapStyle: "amap://styles/whitesmoke"
+        });
+        console.log(bike_ods)
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OD连线</title>
+    <style>
+        html, body, #container {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+        }
+        
+        .range-con {
+            z-index: 2;
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.9);
+        }
+    </style>
+</head>
+<body>
+<div id="container" class="container"></div>
+
+<script src="//webapi.amap.com/maps?v=1.4.15&key=0aafc83cbd2990a6566e3c1f99020ce5&"></script>
+<script src="//webapi.amap.com/loca?v=1.3.2&key=0aafc83cbd2990a6566e3c1f99020ce5"></script>
+<script src="start_line_1000.js"></script>
+<script>
+    var map = new AMap.Map('container', {
+        mapStyle: 'amap://styles/db9efe6a1745ac24b7269b862f359536',
+        features: ['bg', 'road'],
+        pitch: 40,
+    });
+
+    var layer = new Loca.LinkLayer({
+        map: map,
+        fitView: true,
+    });
+
+    layer.setData(city_line, {
+        lnglat: 'line'
+    });
+
+    layer.setOptions({
+        style: {
+            borderWidth: 1.5,
+            opacity: 0.8,
+            color: '#D1E87D'
+        }
+    });
+
+    layer.render();
+</script>
+</body>
+</html>

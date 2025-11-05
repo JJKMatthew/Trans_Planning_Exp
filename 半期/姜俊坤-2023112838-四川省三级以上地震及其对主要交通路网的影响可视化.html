@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四川省三级以上地震及其对主要交通路网的影响可视化</title>
+    <style>
+        html,
+        body,
+        #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .demo-title {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            z-index: 1;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0;
+            color: #333;
+        }
+
+        h3 {
+            font-size: 12px;
+            font-weight: normal;
+            margin-top: 5px;
+            color: #666;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            z-index: 1;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            font-family: Arial, sans-serif;
+        }
+
+        .legend-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .breath-red {
+            background-color: rgba(215,48,39,0.8);
+            animation: breathRed 1.5s infinite alternate;
+        }
+
+        .breath-yellow {
+            background-color: rgba(253,174,97,0.8);
+            animation: breathYellow 2s infinite alternate;
+        }
+
+        .breath-blue {
+            background-color: rgba(66,133,244,0.8);
+            animation: breathBlue 2.5s infinite alternate;
+        }
+
+        @keyframes breathRed {
+            0% { transform: scale(0.8); opacity: 0.7; }
+            100% { transform: scale(1.2); opacity: 1; }
+        }
+
+        @keyframes breathYellow {
+            0% { transform: scale(0.8); opacity: 0.7; }
+            100% { transform: scale(1.2); opacity: 1; }
+        }
+
+        @keyframes breathBlue {
+            0% { transform: scale(0.8); opacity: 0.7; }
+            100% { transform: scale(1.2); opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-title">
+        <h1>四川省三级以上地震分布可视化</h1>
+        <h3>震级分级显示：≥6级(红) 5级(黄) 4级(蓝)</h3>
+    </div>
+
+    <div class="legend">
+        <div class="legend-title">地震震级图例</div>
+        <div class="legend-item">
+            <div class="legend-color breath-red">≥6</div>
+            <span>6级及以上地震</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color breath-yellow">5</div>
+            <span>5级地震</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color breath-blue">4</div>
+            <span>4级地震</span>
+        </div>
+    </div>
+
+    <div id="map"></div>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=0aafc83cbd2990a6566e3c1f99020ce5"></script>
+    <script src="https://webapi.amap.com/loca?v=2.0.0&key=0aafc83cbd2990a6566e3c1f99020ce5"></script>
+    <script src="data/四川省三级以上地震目录202507180100.json"></script>
+    <script>
+        
+      var map = window.map = new AMap.Map('map', {
+          zoom: 6.7,
+          center: [104.0633717, 30.6598628],
+          pitch: 10,
+          showLabel: true,
+          viewMode: '3D',
+      });
+
+      var loca = window.loca = new Loca.Container({
+          map,
+      });
+
+      // 数据转换：仅保留经度(lng)、纬度(lat)、震级(magnitude)和深度(depth)
+      let originData = earthquake || [];
+      console.log('原始数据示例', originData && originData[0]);
+      
+      // 创建三个不同震级的数据集
+      let geoDataRed = { type: "FeatureCollection", features: [] };   // ≥6级
+      let geoDataYellow = { type: "FeatureCollection", features: [] }; // 5级
+      let geoDataBlue = { type: "FeatureCollection", features: [] };   // 4级
+      
+      originData.forEach(item => {
+          const lng = Number(item.jingdu || item.lng );
+          const lat = Number(item.weidu || item.lat);
+          const magnitude = Number(item.zhenji || item.magnitude || 0);
+          const depth = Number(item.shendu || item.depth || 0);
+          
+          if (!isNaN(lng) && !isNaN(lat)) {
+              const feature = {
+                  type: "Feature",
+                  properties: {
+                      magnitude: magnitude,
+                      depth: depth
+                  },
+                  geometry: {
+                      type: "Point",
+                      coordinates: [lng, lat]
+                  }
+              };
+              
+              // 根据震级分类
+              if (magnitude >= 6) {
+                  geoDataRed.features.push(feature);
+              } else if (magnitude >= 5) {
+                  geoDataYellow.features.push(feature);
+              } else if (magnitude >= 4) {
+                  geoDataBlue.features.push(feature);
+              }
+          }
+      });
+      
+      console.log('6级以上地震数量:', geoDataRed.features.length);
+      console.log('5级地震数量:', geoDataYellow.features.length);
+      console.log('4级地震数量:', geoDataBlue.features.length);
+
+      // 创建三个数据源
+      var geoRed = new Loca.GeoJSONSource({ data: geoDataRed });
+      var geoYellow = new Loca.GeoJSONSource({ data: geoDataYellow });
+      var geoBlue = new Loca.GeoJSONSource({ data: geoDataBlue });
+
+      // 6级及以上地震 - 红色呼吸点
+      var breathRed = new Loca.ScatterLayer({
+          zIndex: 113,
+          opacity: 1,
+          visible: true,
+          zooms: [2, 22],
+      });
+      breathRed.setSource(geoRed);
+      breathRed.setStyle({
+          unit: 'meter',
+          size: [65000 , 65000], // 最大尺寸
+          borderWidth: 0,
+          texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/breath_red.png',
+          duration: 800,
+          animate: true,
+      });
+
+      // 5级地震 - 黄色呼吸点
+      var breathYellow = new Loca.ScatterLayer({
+          zIndex: 112,
+          opacity: 1,
+          visible: true,
+          zooms: [2, 22],
+      });
+      breathYellow.setSource(geoYellow);
+      breathYellow.setStyle({
+          unit: 'meter',
+          size: [40000, 40000], // 中等尺寸
+          borderWidth: 0,
+          texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/breath_yellow.png',
+          duration: 1200,
+          animate: true,
+      });
+
+      // 4级地震 - 蓝色呼吸点
+      var breathBlue = new Loca.ScatterLayer({
+          zIndex: 111,
+          opacity: 1,
+          visible: true,
+          zooms: [2, 22],
+      });
+      breathBlue.setSource(geoBlue);
+      breathBlue.setStyle({
+          unit: 'meter',
+          size: [20000, 20000], // 较小尺寸
+          borderWidth: 0,
+          texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/breath_blue.png',
+          duration: 1500,
+          animate: true,
+      });
+
+      // 添加到地图
+      loca.add(breathBlue);
+      loca.add(breathYellow);
+      loca.add(breathRed);
+
+      // 启动渲染动画
+      loca.animate.start();
+
+      // 可选：添加图层控制
+      var dat = new Loca.Dat();
+      dat.addLayer(breathRed, '6级以上地震');
+      dat.addLayer(breathYellow, '5级地震');
+      dat.addLayer(breathBlue, '4级地震');
+
+    </script>
+</body>
+
+</html>

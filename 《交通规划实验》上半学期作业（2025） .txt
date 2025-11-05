@@ -1,0 +1,30 @@
+《交通规划实验》上半学期（1-8周）作业
+
+根据研究兴趣，自选数据，利用高德开放平台（基础API+Loca）做可视化分析（一个可视化页面），
+可以采用点、线、面、热力图、飞线图、弧线图、脉冲线、散点图等所有能够想到的有意义的形式；
+要求：
+* 作图可参考高德示例中心
+https://lbs.amap.com/demo/list/jsapi-v2
+https://lbs.amap.com/product/loca#/
+
+* 自选数据大家可参考
+https://www.kaggle.com/datasets（kaggle比赛网）
+https://scdata.net.cn/oportal/index（四川公共数据开放网）
+https://data.beijing.gov.cn/（北京公共数据开放平台）
+https://opendata.sz.gov.cn/（深圳市政府数据开放平台）
+或者我发到教务网的4类数据，
+
+针对上面的数据，大家需要自行写代码把数据整理成所需的格式
+* 提交作业包含说明文档和源代码两个必须的文件，有其他附件可以一同打包
+* 说明文档2-5页A4文档，包含问题描述、可视化结果、结果讨论三部分
+* 文档命名格式：张三-2020010614-问题说明.docx
+* 源代码格式：张三-2020010614-xxx问题可视化.html
+
+
+所有文件（张三-2020010614-问题说明.docx，张三-2020010614-xxx问题可视化.html）放一个文件夹，压缩上传至：
+https://send2me.cn/PLVtVodk/TZWmuViaeX5Svg
+
+* 提交截止时间：2024年11月7号。
+* 其他不清楚事项可联系我：
+个人主页：https://faculty.swjtu.edu.cn/daizhuang/zh_CN/index.htm
+邮箱：dz@swjtu.edu.cn
